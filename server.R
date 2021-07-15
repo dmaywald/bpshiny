@@ -21,7 +21,7 @@ shinyServer(function(input,output,session) {
       fileInput("datafile", "Choose a CSV File", multiple = FALSE, accept = ".csv")
     }
   })  
-
+  
   #Reactive function to read datafile
   dataset <- reactive({
     inFile <- input$datafile
@@ -107,7 +107,7 @@ shinyServer(function(input,output,session) {
   })
   
   
-  #Creates textInput() based on what column names were selected 
+  #Creates dropdown based on what column names were selected 
   output$dateinput <- renderUI({
     req(input$date1)
     selectInput('date', 'Date', names(dataset()))
@@ -176,12 +176,26 @@ shinyServer(function(input,output,session) {
       selectInput('dow', 'Day of the Week', names(dataset()))
     }
   })
+  #Toggle for data_screen argument 
+  output$data_screen_arg <- renderUI({
+    if(input$fileselect %in% c('input_data', 'ghana_data', 'hypnos_data', 'jhsproc_data', 'bpchildren_data', 'bppreg_data')){
+      selectInput('datascreen_arg', 'Screen for Extreme Values', c('TRUE' = 't', 'FALSE' = 'f'))
+    }
+  })
+  datascreen_tf_value <- reactive ({
+    if(input$datascreen_arg == 'f'){
+      return(FALSE)
+    }else{
+      return(TRUE)
+    }
+  })
   
+  #Toggle between original and processed data
   output$dataviewer <- renderUI(
     radioButtons('dataview', label = 'View Data', choices = c('Orginial Data' = 'unproc_data', 'Processed Data' = 'proc_data'), selected = 'unproc_data')
   )
   
-   #Reactive Expression if users selects hypnos_data
+  #Reactive Expression if users selects hypnos_data
   hypnos_data <- reactive({
     bp_hypnos <- bp::bp_hypnos
     hypnos_proc <- process_data(bp_hypnos,
@@ -196,7 +210,8 @@ shinyServer(function(input,output,session) {
                                 map = "map",
                                 rpp = "rpp",
                                 pp = "pp",
-                                ToD_int = c(5, 13, 18, 23))
+                                ToD_int = c(5, 13, 18, 23),
+                                data_screen = datascreen_tf_value())
     if(input$dataview == 'proc_data'){
       hypnos_proc
     }else{
@@ -211,7 +226,7 @@ shinyServer(function(input,output,session) {
                              sbp = "Sys.mmHg.",
                              dbp = "Dias.mmHg.",
                              date_time = "DateTime",
-                             hr = "pulse.bpm.")
+                             hr = "pulse.bpm.", data_screen = datascreen_tf_value())
     if(input$dataview == 'proc_data'){
       jhs_proc
     }else{
@@ -224,7 +239,8 @@ shinyServer(function(input,output,session) {
     bp_children <- bp::bp_children
     children_proc <- process_data(bp_children, 
                                   sbp = 'sbp', dbp = 'dbp',
-                                  id = 'id', visit = 'visit')
+                                  id = 'id', visit = 'visit',
+                                  data_screen = datascreen_tf_value())
     if(input$dataview == 'proc_data'){
       children_proc
     }else{
@@ -236,7 +252,7 @@ shinyServer(function(input,output,session) {
   preg_data <- reactive({
     bp_preg <- bp::bp_preg
     bppreg_proc <- process_data(bp_preg, sbp = 'SBP', dbp = 'DBP',
-                                id = 'ID')
+                                id = 'ID', data_screen = datascreen_tf_value())
     if(input$dataview == 'proc_data'){
       bppreg_proc
     }else{
@@ -246,14 +262,14 @@ shinyServer(function(input,output,session) {
   
   ghana_data <- reactive({
     bp_ghana <- bp::bp_ghana
-    bpghana_proc <- process_data(bp_ghana, sbp = 'SBP', dbp = 'DBP', id = 'ID')
+    bpghana_proc <- process_data(bp_ghana, sbp = 'SBP', dbp = 'DBP', id = 'ID', data_screen = datascreen_tf_value())
     if(input$dataview == 'proc_data'){
       bpghana_proc
     }else{
       bp_ghana
     }
   })
-
+  
   
   #Reactive Expression if user inputs their own data
   input_data <- reactive({
@@ -288,19 +304,19 @@ shinyServer(function(input,output,session) {
     if(input$rpp1 == FALSE){rpp = NULL}
     dow = input$dow
     if(input$dow1 == FALSE){dow = NULL}
-
+    
     #Displays original dataframe until submit button is pushed and creates new processed data frame with variable name 'bpdata.final'
     if(input$dataview == 'proc_data'){
       bpdata_final = process_data(data = bpdata, sbp = input$sys, dbp = input$dias,date_time = date, id = id, wake = wake, visit = visit,
-                                  hr=hr, pp=pp, map=map,rpp=rpp, DoW=dow)
+                                  hr=hr, pp=pp, map=map,rpp=rpp, DoW=dow, data_screen = datascreen_tf_value())
       bpdata_final
     }else{
       bpdata
     }
-
+    
   })
   
-    #switch() function that will output table according to selected dataset 
+  #switch() function that will output table according to selected dataset 
   user_data <- reactive ({
     datachoice = input$fileselect
     switch(datachoice,'ghana_data' = ghana_data(), 'hypnos_data' = hypnos_data(), 'jhsproc_data' = jhs_data(), 'bpchildren_data' = children_data(),
@@ -748,96 +764,106 @@ shinyServer(function(input,output,session) {
   ################################################################################################################################
   ################################################################################################################################
   
-  
   ######PLOT######
-  
-  
-  output$input_data_subj <- renderUI({
-    selectInput(inputId = "subj_input_data", label = "Subject", choices = c("", as.character(factor(user_data()$ID))), selected = NULL, multiple = T)
-  })
-  
-  output$input_data_group_var <- renderUI({
-    selectInput(inputId = "group_var_input_data", label = "Grouping Variable (1):", choices = c("", names(user_data()[,1:ncol(user_data())])),selected = NULL, multiple = T)
-  })
-  
-  output$input_data_wrap_vars <- renderUI({
-    selectInput(inputId = "wrap_vars_input_data", label = "Wrapping Variable (1):", choices = c("", names(user_data()[,1:ncol(user_data())])), selected = NULL, multiple = T)
-  })
-  
   output$plotName <- renderText(input$fileselect)
   
-  output$bp.scatter <- renderPlot({bp_scatter(user_data(),
-                                              plot_type = input$plotType,
-                                              subj = {
-                                                if (input$fileselect == "ghana_data"){input$subj_ghana}
-                                                else if (input$fileselect == "hypnos_data"){input$subj_hypnos}
-                                                else if(input$fileselect == "input_data" && length(factor(input$subj_input_data)) >1){input$subj_input_data}
-                                                else (subj <- NULL)
-                                              }
-                                              ,
-                                              wrap_var = {
-                                                if(input$fileselect == "input_data"){
-                                                  if(!is.null(input$wrap_vars_input_data)){
-                                                    if(nchar(input$wrap_vars_input_data)>1){
-                                                      input$wrap_vars_input_data
-                                                    }
-                                                  }
-                                                }
-                                                
-                                                else if (input$fileselect == "ghana_data"){
-                                                  if(!is.null(input$wrap_vars_ghana)){
-                                                    if(nchar(input$wrap_vars_ghana)>1){
-                                                      input$wrap_vars_ghana
-                                                    }
-                                                  }
-                                                }
-                                                else if (input$fileselect == "jhsproc_data"){
-                                                  if(!is.null(input$wrap_vars_jhs)){
-                                                    if(nchar(input$wrap_vars_jhs)>1){
-                                                      input$wrap_vars_jhs
-                                                    }
-                                                  }}
-                                                else if (input$fileselect == "hypnos_data"){
-                                                  if(!is.null(input$wrap_vars_hypnos)){
-                                                    if(nchar(input$wrap_vars_hypnos)>1){
-                                                      input$wrap_vars_hypnos
-                                                    }
-                                                  }
-                                                }
-                                              },
-                                              group_var = {
-                                                if(input$fileselect == "input_data"){
-                                                  if(!is.null(input$group_var_input_data)){
-                                                    if(nchar(input$group_var_input_data)>1){
-                                                      input$group_var_input_data
-                                                    }
-                                                  }
-                                                }
-                                                
-                                                else if (input$fileselect == "ghana_data"){
-                                                  if(!is.null(input$group_var_ghana)){
-                                                    if(nchar(input$group_var_ghana)>1){
-                                                      input$group_var_ghana
-                                                    }
-                                                  }
-                                                }
-                                                else if (input$fileselect == "jhsproc_data"){
-                                                  if(!is.null(input$group_var_jhs)){
-                                                    if(nchar(input$group_var_jhs)>1){
-                                                      input$group_var_jhs
-                                                    }
-                                                  }
-                                                }
-                                                else if (input$fileselect == "hypnos_data"){
-                                                  if(!is.null(input$group_var_hypnos)){
-                                                    if(nchar(input$group_var_hypnos)>1){
-                                                      input$group_var_hypnos
-                                                    }
-                                                  }
-                                                }
-                                              },
-                                              inc_crisis = input$inc.crisis,
-                                              inc_low = input$inc.low
-  )})
+  plottype <- reactive({  # wrap plottype input in a reactive for rendering UI and Plot
+    if(input$plottype == "bp_scatter"){
+      return("bp_scatter")
+    }
+    else if(input$plottype == "bp_hist"){
+      return("bp_hist")
+    }
+  })
   
+  
+  ### Get subj argument for bp_scatter and bp_hist
+  
+  output$subj_for_scatter_and_hist <- renderUI({
+    plottype = plottype()
+    
+    if((plottype == "bp_scatter") | (plottype == "bp_hist")){
+      selectInput(inputId = "subj_for_scatter_and_hist", label = "Subject", choices = c("", as.character(levels(factor(user_data()$ID)))), selected = NULL, multiple = T)
+    }
+    else{NULL}
+  })
+  
+  ### Get group_var argument for bp_scatter
+  output$group_var_for_scatter <- renderUI({
+    plottype = plottype()
+    
+    if(plottype == "bp_scatter"){
+      selectInput(inputId = "group_var_for_scatter", label = "Grouping Variable (1):", choices = c("", names(user_data()[,1:ncol(user_data())])),selected = NULL, multiple = T)
+    }
+    else{NULL}
+  })
+  
+  ### Get wrap_var argument for bp_scattter
+  output$wrap_var_for_scatter <- renderUI({
+    plottype = plottype()
+    
+    if(plottype == "bp_scatter"){
+      selectInput(inputId = "wrap_var_for_scatter", label = "Wrapping Variable (1):", choices = c("", names(user_data()[,1:ncol(user_data())])), selected = NULL, multiple = T)
+    }
+    else{NULL}
+  })
+  
+  output$plot_type_for_scatter <- renderUI({
+    plottype = plottype()
+    if (plottype == "bp_scatter"){
+      radioButtons(inputId = "plot_type_for_scatter", label = "Plot Type", choices = c("stages2020", "AHA"), selected = "stages2020")
+    }
+    else{NULL}
+  })
+  
+  
+  output$include_crisis_stages2020 <- renderUI({
+    plottype = plottype()
+    plot_type_for_scatter = input$plot_type_for_scatter
+    
+    if (plottype == "bp_scatter" & plot_type_for_scatter == "stages2020"){
+      checkboxInput(inputId = "inc_crisis_T_or_F",label = "Include Hypersensitive Crisis?", value = T)
+    }
+  })
+  
+  output$include_low_stages2020 <- renderUI({
+    plottype = plottype()
+    plot_type_for_scatter = input$plot_type_for_scatter
+    
+    if (plottype == "bp_scatter" & plot_type_for_scatter == "stages2020"){
+      checkboxInput(inputId = "inc_low_T_or_F",label = "Include Low Hypotension?", value = T)
+    }
+  })
+  
+  
+  ### Render Plot
+  
+  plotFunc <- reactive({
+    
+    plottype = plottype() # bring reactive input variable into this renderPlot call
+    library(bp)
+    
+    if(plottype == "bp_hist"){
+      
+      
+      if(input$fileselect == "ghana_data"){
+        bp_hist(data = bp_ghana, subj = input$subj_for_scatter_and_hist)
+      }
+      else{
+        bp_hist(data = user_data(), subj = input$subj_for_scatter_and_hist)
+      }
+    }
+    else if(plottype == "bp_scatter"){
+      bp_scatter(data = user_data(), plot_type = input$plot_type_for_scatter,
+                 subj = input$subj_for_scatter_and_hist,
+                 group_var = input$group_var_for_scatter,
+                 wrap_var = input$wrap_var_for_scatter,
+                 inc_crisis = input$inc_crisis_T_or_F, 
+                 inc_low = input$inc_low_T_or_F)
+    }
+  })
+  
+  output$plot <- renderPlot({
+    plotFunc()
+  })
 })

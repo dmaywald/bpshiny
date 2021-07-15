@@ -1,3 +1,4 @@
+
 library(shiny)
 library(DT)
 library(bp)
@@ -15,8 +16,8 @@ ui <- fluidPage(
              sidebarLayout(
                sidebarPanel(
                  selectInput('fileselect', label = 'Select Dataset',
-                             choices = list('','bp_ghana' = 'ghana_data', 'bp_hypnos' = 'hypnos_data','bp_jhs' = 'jhsproc_data',
-                                            'bp_children' = 'bpchildren_data','bp_preg' = 'bppreg_data', 'User Datafile' = 'input_data' )),
+                             choices = list('', 'User Datafile' = 'input_data', 'bp_ghana' = 'ghana_data', 'bp_hypnos' = 'hypnos_data','bp_jhs' = 'jhsproc_data',
+                                            'bp_children' = 'bpchildren_data','bp_preg' = 'bppreg_data')),
                  uiOutput('file_input'),
                  uiOutput('sys_input'),
                  uiOutput('dias_input'),
@@ -38,6 +39,7 @@ ui <- fluidPage(
                  uiOutput('rppinput'),
                  uiOutput('dow_checkbox'),
                  uiOutput('dowinput'),
+                 uiOutput('data_screen_arg'),
                  uiOutput('dataviewer')
                ),
                mainPanel(tableOutput("contents"))
@@ -85,34 +87,34 @@ ui <- fluidPage(
                                           textOutput("text_14"), DT::dataTableOutput("metric_bp_table_14"),
                                           textOutput("text_15"), DT::dataTableOutput("metric_bp_table_15"),
                                           textOutput("text_16"), DT::dataTableOutput("metric_bp_table_16")
-                                          ), 
+                         ), 
                          conditionalPanel(condition = "output.dip_calc_tables", 
                                           DT::dataTableOutput("metric_dip_calc_1"), 
                                           DT::dataTableOutput("metric_dip_calc_2"))
-                         )
+               )
                
                #mainPanel(DT::dataTableOutput("metric")))
              )),
     tabPanel("Plots", fluid = T, 
-      sidebarLayout(
-        sidebarPanel = sidebarPanel(
-        radioButtons("plottype",  "Plot Type",
-                       choices = c(`Scatter Plot` = 'bp_scatter',
-                                   `Histogram` = 'bp_hist'
-                                    )
-                       ),
-        uiOutput("subj_for_scatter_and_hist"),
-        uiOutput("group_var_for_scatter"),
-        uiOutput("wrap_var_for_scatter"),
-        uiOutput("plot_type_for_scatter"),
-        uiOutput("include_crisis_stages2020"),
-        uiOutput("include_low_stages2020")),
-        mainPanel = 
-          mainPanel(plotOutput("plot"),
-                    hr(),
-                    textOutput(outputId = "plotName"))
-        
-      )
+             sidebarLayout(
+               sidebarPanel = sidebarPanel(
+                 radioButtons("plottype",  "Plot Type",
+                              choices = c(`Scatter Plot` = 'bp_scatter',
+                                          `Histogram` = 'bp_hist'
+                              )
+                 ),
+                 uiOutput("subj_for_scatter_and_hist"),
+                 uiOutput("group_var_for_scatter"),
+                 uiOutput("wrap_var_for_scatter"),
+                 uiOutput("plot_type_for_scatter"),
+                 uiOutput("include_crisis_stages2020"),
+                 uiOutput("include_low_stages2020")),
+               mainPanel = 
+                 mainPanel(plotOutput("plot"),
+                           hr(),
+                           textOutput(outputId = "plotName"))
+               
+             )
     )
   )
 )
