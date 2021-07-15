@@ -51,18 +51,48 @@ ui <- fluidPage(
                                                                                'Measures of Center' = 'bp_center', 
                                                                                'Blood Pressure Magnitude (Peak and Trough)' = 'bp_mag',
                                                                                'Blood Pressure Range' = 'bp_range', 
-                                                                               'Aggregated BP Summary Statistics' = 'bp_stats'
+                                                                               'Aggregated BP Summary Statistics' = 'bp_stats', 
+                                                                               'Blood Pressure Tables' = 'bp_tables', 
+                                                                               'Coefficient of Variation (CV)' = 'cv',
+                                                                               'Successive Variation (SV)' = 'sv', 
+                                                                               'Nocturnal Blood Pressure Dipping Calculation' = 'dip_calc'
                                                                                
                )),
-               uiOutput("select_parameter"),
+               uiOutput("select_dip_parameter"),
+               uiOutput('select_ext_parameter'),
                uiOutput("help_text"),
-               uiOutput("select_second_parameter"),
-               uiOutput("second_parameter_helptext"),
-               uiOutput("select_third_parameter"),
-               uiOutput("third_parameter_helptext"),
+               # uiOutput("select_second_parameter"),
+               # uiOutput("second_parameter_helptext"),
+               # uiOutput("select_third_parameter"),
+               # uiOutput("third_parameter_helptext"),
                ),
-               mainPanel(DT::dataTableOutput("metric")))
-    ),
+               mainPanel(conditionalPanel(condition = "output.one_table",
+                                          DT::dataTableOutput("metric_table")),
+                         conditionalPanel(condition = "output.bp_tables_tables",
+                                          textOutput("text_1"), DT::dataTableOutput("metric_bp_table_1"),
+                                          textOutput("text_2"), DT::dataTableOutput("metric_bp_table_2"), 
+                                          textOutput("text_3"), DT::dataTableOutput("metric_bp_table_3"),
+                                          textOutput("text_4"), DT::dataTableOutput("metric_bp_table_4"),
+                                          textOutput("text_5"), DT::dataTableOutput("metric_bp_table_5"),
+                                          textOutput("text_6"), DT::dataTableOutput("metric_bp_table_6"),
+                                          textOutput("text_7"), DT::dataTableOutput("metric_bp_table_7"),
+                                          textOutput("text_8"), DT::dataTableOutput("metric_bp_table_8"),
+                                          textOutput("text_9"), DT::dataTableOutput("metric_bp_table_9"),
+                                          textOutput("text_10"), DT::dataTableOutput("metric_bp_table_10"),
+                                          textOutput("text_11"), DT::dataTableOutput("metric_bp_table_11"),
+                                          textOutput("text_12"), DT::dataTableOutput("metric_bp_table_12"),
+                                          textOutput("text_13"), DT::dataTableOutput("metric_bp_table_13"),
+                                          textOutput("text_14"), DT::dataTableOutput("metric_bp_table_14"),
+                                          textOutput("text_15"), DT::dataTableOutput("metric_bp_table_15"),
+                                          textOutput("text_16"), DT::dataTableOutput("metric_bp_table_16")
+                                          ), 
+                         conditionalPanel(condition = "output.dip_calc_tables", 
+                                          DT::dataTableOutput("metric_dip_calc_1"), 
+                                          DT::dataTableOutput("metric_dip_calc_2"))
+                         )
+               
+               #mainPanel(DT::dataTableOutput("metric")))
+             )),
     tabPanel("Plots", fluid = T, 
       sidebarLayout(
         sidebarPanel = sidebarPanel(
