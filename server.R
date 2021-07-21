@@ -177,12 +177,26 @@ shinyServer(function(input,output,session) {
     }
   })
   #Toggle for data_screen argument 
-  output$data_screen_arg <- renderUI({
+  output$data_screen_check <- renderUI({
     if(input$fileselect %in% c('input_data', 'ghana_data', 'hypnos_data', 'jhsproc_data', 'bpchildren_data', 'bppreg_data')){
-      selectInput('datascreen_arg', 'Screen for Extreme Values', c('TRUE' = 't', 'FALSE' = 'f'))
+      checkboxInput('datascreen_check', 'Data Screen Argument')
     }
   })
-  datascreen_tf_value <- reactive ({
+  
+  output$data_screen_arg <- renderUI({
+    req(input$datascreen_check)
+    if(input$datascreen_check == FALSE){
+      return(NULL)
+    }else{
+      selectInput('datascreen_arg', 'Screen For Extreme Values', c('True' = 't', 'False' = 'f'))
+    }
+  })
+  
+  datascreen_value <- reactive ({
+    if(is.null(input$datascreen_arg)){
+      return(TRUE)
+    }
+    req(input$datascreen_arg)
     if(input$datascreen_arg == 'f'){
       return(FALSE)
     }else{
@@ -192,7 +206,7 @@ shinyServer(function(input,output,session) {
   
   #Toggle between original and processed data
   output$dataviewer <- renderUI(
-    radioButtons('dataview', label = 'View Data', choices = c('Orginial Data' = 'unproc_data', 'Processed Data' = 'proc_data'), selected = 'unproc_data')
+    radioButtons('dataview', label = 'View Data', choices = c('Original Data' = 'unproc_data', 'Processed Data' = 'proc_data'), selected = 'unproc_data')
   )
   
   #Reactive Expression if users selects hypnos_data
@@ -211,14 +225,14 @@ shinyServer(function(input,output,session) {
                                 rpp = "rpp",
                                 pp = "pp",
                                 ToD_int = c(5, 13, 18, 23),
-                                data_screen = datascreen_tf_value())
+                                data_screen = datascreen_value())
     if(input$dataview == 'proc_data'){
       hypnos_proc
     }else{
       bp_hypnos
     }
   })
-
+  
   #Reactive Expression if users selects jhs_data
   jhs_data <- reactive ({
     bp_jhs <- bp::bp_jhs
@@ -226,7 +240,7 @@ shinyServer(function(input,output,session) {
                              sbp = "Sys.mmHg.",
                              dbp = "Dias.mmHg.",
                              date_time = "DateTime",
-                             hr = "pulse.bpm.", data_screen = datascreen_tf_value())
+                             hr = "pulse.bpm.", data_screen = datascreen_value())
     if(input$dataview == 'proc_data'){
       jhs_proc
     }else{
@@ -240,7 +254,7 @@ shinyServer(function(input,output,session) {
     children_proc <- process_data(bp_children, 
                                   sbp = 'sbp', dbp = 'dbp',
                                   id = 'id', visit = 'visit',
-                                  data_screen = datascreen_tf_value())
+                                  data_screen = datascreen_value())
     if(input$dataview == 'proc_data'){
       children_proc
     }else{
@@ -252,7 +266,7 @@ shinyServer(function(input,output,session) {
   preg_data <- reactive({
     bp_preg <- bp::bp_preg
     bppreg_proc <- process_data(bp_preg, sbp = 'SBP', dbp = 'DBP',
-                                id = 'ID', data_screen = datascreen_tf_value())
+                                id = 'ID', data_screen = datascreen_value())
     if(input$dataview == 'proc_data'){
       bppreg_proc
     }else{
@@ -262,7 +276,7 @@ shinyServer(function(input,output,session) {
   
   ghana_data <- reactive({
     bp_ghana <- bp::bp_ghana
-    bpghana_proc <- process_data(bp_ghana, sbp = 'SBP', dbp = 'DBP', id = 'ID', data_screen = datascreen_tf_value())
+    bpghana_proc <- process_data(bp_ghana, sbp = 'SBP', dbp = 'DBP', id = 'ID', data_screen = datascreen_value())
     if(input$dataview == 'proc_data'){
       bpghana_proc
     }else{
@@ -308,7 +322,7 @@ shinyServer(function(input,output,session) {
     #Displays original dataframe until submit button is pushed and creates new processed data frame with variable name 'bpdata.final'
     if(input$dataview == 'proc_data'){
       bpdata_final = process_data(data = bpdata, sbp = input$sys, dbp = input$dias,date_time = date, id = id, wake = wake, visit = visit,
-                                  hr=hr, pp=pp, map=map,rpp=rpp, DoW=dow, data_screen = datascreen_tf_value())
+                                  hr=hr, pp=pp, map=map,rpp=rpp, DoW=dow, data_screen = datascreen_value())
       bpdata_final
     }else{
       bpdata
@@ -761,9 +775,6 @@ shinyServer(function(input,output,session) {
   })
   outputOptions(output, 'dip_calc_tables', suspendWhenHidden = FALSE)
   
-  ################################################################################################################################
-  ################################################################################################################################
-  
   ######PLOT######
   output$plotName <- renderText(input$fileselect)
   
@@ -783,7 +794,7 @@ shinyServer(function(input,output,session) {
     plottype = plottype()
     
     if((plottype == "bp_scatter") | (plottype == "bp_hist")){
-      selectInput(inputId = "subj_for_scatter_and_hist", label = "Subject", choices = c("", as.character(levels(factor(user_data()$ID)))), selected = NULL, multiple = T)
+      selectizeInput(inputId = "subj_for_scatter_and_hist", label = "Subject", choices = c("", as.character(levels(factor(user_data()$ID)))), selected = NULL, multiple = T)
     }
     else{NULL}
   })
@@ -793,7 +804,7 @@ shinyServer(function(input,output,session) {
     plottype = plottype()
     
     if(plottype == "bp_scatter"){
-      selectInput(inputId = "group_var_for_scatter", label = "Grouping Variable (1):", choices = c("", names(user_data()[,1:ncol(user_data())])),selected = NULL, multiple = T)
+      selectInput(inputId = "group_var_for_scatter", label = "Grouping Variable (1):", choices = c("", names(user_data()[,which(user_data() %>% summarise_all(n_distinct) <= 10)])),selected = NULL, multiple = T)
     }
     else{NULL}
   })
@@ -803,7 +814,7 @@ shinyServer(function(input,output,session) {
     plottype = plottype()
     
     if(plottype == "bp_scatter"){
-      selectInput(inputId = "wrap_var_for_scatter", label = "Wrapping Variable (1):", choices = c("", names(user_data()[,1:ncol(user_data())])), selected = NULL, multiple = T)
+      selectInput(inputId = "wrap_var_for_scatter", label = "Wrapping Variable (1):", choices = c("", names(user_data()[,which(user_data() %>% summarise_all(n_distinct) <= 10)])), selected = NULL, multiple = T)
     }
     else{NULL}
   })
