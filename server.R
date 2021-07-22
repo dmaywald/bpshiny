@@ -176,9 +176,40 @@ shinyServer(function(input,output,session) {
       selectInput('dow', 'Day of the Week', names(dataset()))
     }
   })
+
+  #Select for bp_type argument
+  output$bp_type_check <- renderUI({
+    if(input$fileselect %in% c('input_data')){
+      checkboxInput('bptype_check', 'Blood Presure Type Argument')
+    }
+  })
+  
+  output$bp_type_arg <- renderUI({
+    req(input$bptype_check)
+    if(input$bptype_check == FALSE){
+      return(NULL)
+    }else{
+      selectInput('bptype_arg', 'Blood Pressure Type', c('HBPM' ='hbpm', 'ABPM' = 'abpm', 'AP' = 'ap'))
+    }
+  })
+  
+  bptype_value <- reactive({
+    if(is.null(input$bptype_arg) | isFALSE(input$bptype_check)){
+      return('hbpm')
+    }
+    req(input$bptype_arg)
+    if(input$bptype_arg == 'hbpm'){
+      return('hbpm')
+    }else if (input$bptype_arg == 'abpm'){
+      return('abpm')
+    }else{
+      return('ap')
+    }
+  })
+
   #Toggle for data_screen argument 
   output$data_screen_check <- renderUI({
-    if(input$fileselect %in% c('input_data', 'ghana_data', 'hypnos_data', 'jhsproc_data', 'bpchildren_data', 'bppreg_data')){
+    if(input$fileselect %in% c('input_data')){
       checkboxInput('datascreen_check', 'Data Screen Argument')
     }
   })
@@ -193,7 +224,7 @@ shinyServer(function(input,output,session) {
   })
   
   datascreen_value <- reactive ({
-    if(is.null(input$datascreen_arg)){
+    if(is.null(input$datascreen_arg) | isFALSE(input$datascreen_check)){
       return(TRUE)
     }
     req(input$datascreen_arg)
@@ -202,6 +233,92 @@ shinyServer(function(input,output,session) {
     }else{
       return(TRUE)
     }
+  })
+  
+  #Toggle for inc_low argument
+  output$inc_low_check <- renderUI({
+    if(input$fileselect %in% c('input_data')){
+      checkboxInput('inclow_check', 'Include Low Argument')
+    }
+  })
+  
+  output$inc_low_arg <- renderUI({
+    req(input$inclow_check)
+    if(input$inclow_check == FALSE){
+      return(NULL)
+    }else{
+      selectInput('inclow_arg', 'Include Low Category', c('True' = 't', 'False' = 'f'))
+    }
+  })
+  
+  inclow_value <- reactive({
+    if(is.null(input$inclow_arg) | isFALSE(input$inclow_check)){
+      return(TRUE)
+    }
+    req(input$inclow_arg)
+    if(input$inclow_arg == 'f'){
+      return(FALSE)
+    }else{
+      return(TRUE)
+    }
+  })
+  
+  #Toggle for the inc_crisis argument
+  output$inc_crisis_check <- renderUI({
+    if(input$fileselect %in% c('input_data')){
+      checkboxInput('inccrisis_check', 'Include Crisis Argument')
+    }
+  })
+  
+  output$inc_crisis_arg <- renderUI({
+    req(input$inccrisis_check)
+    if(input$inccrisis_check == FALSE){
+      return(NULL)
+    }else{
+      selectInput('inccrisis_arg', 'Include Crisis Category', c('True' = 't', 'False' = 'f'))
+    }
+  })
+  
+  inccrisis_value <- reactive({
+    if(is.null(input$inccrisis_arg) | isFALSE(input$inccrisis_check)){
+      return(TRUE)
+    }
+    req(input$inccrisis_arg)
+    if(input$inccrisis_arg == 'f'){
+      return(FALSE)
+    }else{
+      return(TRUE)
+    }
+  })
+  
+  #Input for tod_int argument
+  output$tod_int_check <- renderUI({
+    if(input$fileselect %in% c('input_data','hypnos_data')){
+      checkboxInput('todint_check', 'Include Time of Day Argument')
+    }
+  })
+  
+  output$tod_int_arg <- renderUI({
+    req(input$todint_check)
+    if(input$todint_check == FALSE){
+      return(NULL)
+    }else{
+     textInput('todint_arg', 'Time of Day Argument') 
+    }
+  })
+  
+  todint_value <- reactive({
+    if(is.null(input$todint_arg) | isFALSE(input$todint_check)){
+      return(c(6,12,18,0))
+    }
+    req(input$todint_arg)
+    if(!is.null(input$todint_arg)){
+      inp <- as.numeric(unlist(strsplit(input$todint_arg,",")))
+      req(length(inp) >= 4)
+      return(inp)
+    }
+    
+    
   })
   
   #Toggle between original and processed data
@@ -223,9 +340,7 @@ shinyServer(function(input,output,session) {
                                 hr = "hr",
                                 map = "map",
                                 rpp = "rpp",
-                                pp = "pp",
-                                ToD_int = c(5, 13, 18, 23),
-                                data_screen = datascreen_value())
+                                pp = "pp")
     if(input$dataview == 'proc_data'){
       hypnos_proc
     }else{
@@ -240,7 +355,7 @@ shinyServer(function(input,output,session) {
                              sbp = "Sys.mmHg.",
                              dbp = "Dias.mmHg.",
                              date_time = "DateTime",
-                             hr = "pulse.bpm.", data_screen = datascreen_value())
+                             hr = "pulse.bpm.")
     if(input$dataview == 'proc_data'){
       jhs_proc
     }else{
@@ -253,8 +368,7 @@ shinyServer(function(input,output,session) {
     bp_children <- bp::bp_children
     children_proc <- process_data(bp_children, 
                                   sbp = 'sbp', dbp = 'dbp',
-                                  id = 'id', visit = 'visit',
-                                  data_screen = datascreen_value())
+                                  id = 'id', visit = 'visit')
     if(input$dataview == 'proc_data'){
       children_proc
     }else{
@@ -266,7 +380,7 @@ shinyServer(function(input,output,session) {
   preg_data <- reactive({
     bp_preg <- bp::bp_preg
     bppreg_proc <- process_data(bp_preg, sbp = 'SBP', dbp = 'DBP',
-                                id = 'ID', data_screen = datascreen_value())
+                                id = 'ID')
     if(input$dataview == 'proc_data'){
       bppreg_proc
     }else{
@@ -276,7 +390,7 @@ shinyServer(function(input,output,session) {
   
   ghana_data <- reactive({
     bp_ghana <- bp::bp_ghana
-    bpghana_proc <- process_data(bp_ghana, sbp = 'SBP', dbp = 'DBP', id = 'ID', data_screen = datascreen_value())
+    bpghana_proc <- process_data(bp_ghana, sbp = 'SBP', dbp = 'DBP', id = 'ID')
     if(input$dataview == 'proc_data'){
       bpghana_proc
     }else{
@@ -322,7 +436,9 @@ shinyServer(function(input,output,session) {
     #Displays original dataframe until submit button is pushed and creates new processed data frame with variable name 'bpdata.final'
     if(input$dataview == 'proc_data'){
       bpdata_final = process_data(data = bpdata, sbp = input$sys, dbp = input$dias,date_time = date, id = id, wake = wake, visit = visit,
-                                  hr=hr, pp=pp, map=map,rpp=rpp, DoW=dow, data_screen = datascreen_value())
+                                  hr=hr, pp=pp, map=map,rpp=rpp, DoW=dow, data_screen = datascreen_value(),
+                                  bp_type = bptype_value(), inc_low = inclow_value(), inc_crisis = inccrisis_value(),
+                                  ToD_int = todint_value())
       bpdata_final
     }else{
       bpdata
@@ -344,7 +460,6 @@ shinyServer(function(input,output,session) {
   
   
   
-  ################################################################################################################################  
   ############################# METRIC SECTION ######################################################
   
   
@@ -374,15 +489,16 @@ shinyServer(function(input,output,session) {
   #specify first parameter and the default values
   output$select_dip_parameter <- renderUI({
     if(input$metric == "dip_calc"){
-      numericInput("parameter", "Specify dip_thresh Parameter",value = 0.1, step = 0.05)
+      numericInput("parameter", "Specify dipping threshold",value = 0.1, step = 0.05)
     }
   })
   
   output$select_ext_parameter <- renderUI({
     if(input$metric == "dip_calc"){
-      numericInput("parameter2", "Specify extreme_thresh Parameter",value = 0.2, step = 0.05)
+      numericInput("parameter2", "Specify extreme dipping threshold",value = 0.2, step = 0.05)
     }
   })
+  #add warning message if dip_thres >= ext_thres
   
   #add description of first parameter
   
@@ -393,7 +509,10 @@ shinyServer(function(input,output,session) {
       helpText("No parameters need to be specified.")
     }
     else if(parameter_type == "dip_calc"){
-      helpText("Enter the dip and extreme thresholds separated by comma.")
+      helpText("Enter the dip and extreme thresholds separated by comma. ")
+      if (input$parameter >= input$parameter2){
+        helpText("Enter a dipping threshold less than extreme dipping threshold. ")
+      }
     }
   })
   
@@ -464,6 +583,12 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    ## validate(need) argument, eliminates error popping up when changing parameter type
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "none", "output type incorrect")
+    )
+    
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "none")){
       string = paste("bp::", input$metric, "(data)", sep = "")
     }
@@ -477,6 +602,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -488,6 +617,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -499,6 +632,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -510,6 +647,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -521,6 +662,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -532,6 +677,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -543,6 +692,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -554,6 +707,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -565,6 +722,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -576,6 +737,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -587,6 +752,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -598,6 +767,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -609,39 +782,68 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
+    ## need wake to calculate sbp_by_wake_status(metric_bp_table_13), dbp_by_wake_status(14), sbp_by_wake_perc(15), and dbp_by_wake_perc(16), details seen in bp::bp_tables function
+    validate(
+      need("WAKE" %in% names(data), "N/A - WAKE column not available")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
     tables_output$SBP_by_WAKE_status
   })
-  output$text_13 <- renderText({"\n Table 13. SBP_by_WAKE_status"})
+  output$text_13 <- renderText({"\n Table 13. SBP_by_WAKE_status \n"})
   
   metric_bp_table_14 <- reactive({
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
+    validate(
+      need("WAKE" %in% names(data), "N/A - WAKE column not available")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
     tables_output$DBP_by_WAKE_status
   })
-  output$text_14 <- renderText({"\n Table 14. DBP_by_WAKE_status"})
+  output$text_14 <- renderText(paste("Table 14. DBP_by_WAKE_status", "", sep = "\n"))
   
   metric_bp_table_15 <- reactive({
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
+    validate(
+      need("WAKE" %in% names(data), "N/A - WAKE column not available")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
     tables_output$SBP_by_WAKE_perc
   })
-  output$text_15 <- renderText({"\n Table 15. SBP_by_WAKE_perc"})
+  output$text_15 <- renderText({"\n Table 15. SBP_by_WAKE_perc \n"})
   
   metric_bp_table_16 <- reactive({
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "none", "parameter type incorrect"),
+      need(output_type == "tables", "output type incorrect")
+    )
+    validate(
+      need("WAKE" %in% names(data), "N/A - WAKE column not available")
+    )
     if(is.null(input$parameter) | (parameter_type == "none" & output_type == "tables")){
       tables_output = bp::bp_tables(data)
     }
@@ -720,21 +922,25 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
-    if (is.null(input$parameter)) {
-      validate(
-        need(!is.null(input$parameter), "Please wait - Rendering")
-      )
-    } else if (grepl(',', input$parameter) & !grepl("\\(", input$parameter)) {
-      if (length(strsplit(input$parameter, split = ",")[[1]]) != 2) {
-        validate (
-          need(parameter_type == "dip_calc", "Please wait - Rendering")
-        )
-      } else {
-        validate(
-          need(parameter_type == "dip_calc", "Please wait - Rendering")
-        )
-      }
-    }
+    validate (
+      need(parameter_type == "dip_calc", "parameter type incorrect"),
+      need(output_type == "dip_calc", "output type incorrect")
+    )
+    # if (is.null(input$parameter)) {
+    #   validate(
+    #     need(!is.null(input$parameter), "Please wait - Rendering")
+    #   )
+    # } else if (grepl(',', input$parameter) & !grepl("\\(", input$parameter)) {
+    #   if (length(strsplit(input$parameter, split = ",")[[1]]) != 2) {
+    #     validate (
+    #       need(parameter_type == "dip_calc", "Please wait - Rendering")
+    #     )
+    #   } else {
+    #     validate(
+    #       need(parameter_type == "dip_calc", "Please wait - Rendering")
+    #     )
+    #   }
+    # }
     if(is.null(input$parameter) | (parameter_type == "dip_calc" & output_type == "dip_calc")){
       dip_calc_output = bp::dip_calc(data, dip_thresh = input$parameter, extreme_thresh = input$parameter2)
     }
@@ -745,6 +951,10 @@ shinyServer(function(input,output,session) {
     parameter_type = parameter_type()
     data = user_data()
     output_type = output_type()
+    validate (
+      need(parameter_type == "dip_calc", "parameter type incorrect"),
+      need(output_type == "dip_calc", "output type incorrect")
+    )
     if(is.null(input$parameter) | (parameter_type == "dip_calc" & output_type == "dip_calc")){
       dip_calc_output = bp::dip_calc(data, dip_thresh = input$parameter, extreme_thresh = input$parameter2)
     }
