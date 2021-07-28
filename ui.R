@@ -66,32 +66,24 @@ ui <- fluidPage(
              )),
     tabPanel("Metrics", fluid = T, 
              sidebarLayout(
-               sidebarPanel(selectInput('metric', 'Choose Metric', choices = c("Aggregated BP Summary Statistics" = "bp_stats", 
-                                                                               "Average Real Variability (ARV)" = "arv",
-                                                                               "Blood Pressure Magnitude (Peak and Trough)" = "bp_mag",
-                                                                               "Blood Pressure Range" = "bp_range", 
-                                                                               "Blood Pressure Tables" = "bp_tables", 
-                                                                               "Coefficient of Variation (CV)" = "cv",
-                                                                               "Measures of Center" = "bp_center", 
-                                                                               "Morning Blood Pressure Surge" = "mbps", 
-                                                                               "Morningness-Eveningness Average" = "me_avg", 
-                                                                               "Morningness-Eveningness Difference" = "me_diff", 
-                                                                               "Nocturnal Blood Pressure Dipping Calculation" = "dip_calc", 
-                                                                               "Smoothness Index" = "si",                                                                                
-                                                                               "Successive Variation (SV)" = "sv", 
-                                                                               "Trough: Peak Ratio" = "tp_ratio", 
-                                                                               "Weighted Standard Deviation" = "w_sd"
-                                                                               
+               sidebarPanel(selectInput('metric', 'Choose Metric', choices = c('Average Real Variability (ARV)' = 'arv',
+                                                                               'Measures of Center' = 'bp_center', 
+                                                                               'Blood Pressure Magnitude (Peak and Trough)' = 'bp_mag',
+                                                                               'Blood Pressure Range' = 'bp_range', 
+                                                                               'Aggregated BP Summary Statistics' = 'bp_stats', 
+                                                                               'Blood Pressure Tables' = 'bp_tables', 
+                                                                               'Coefficient of Variation (CV)' = 'cv',
+                                                                               'Successive Variation (SV)' = 'sv', 
+                                                                               'Nocturnal Blood Pressure Dipping Calculation' = 'dip_calc'
                                                                                
                )),
                uiOutput("select_dip_parameter"),
-               uiOutput("select_ext_parameter"),
+               uiOutput('select_ext_parameter'),
                uiOutput("help_text"),
                # uiOutput("select_second_parameter"),
                # uiOutput("second_parameter_helptext"),
                # uiOutput("select_third_parameter"),
                # uiOutput("third_parameter_helptext"),
-               actionButton(inputId = "metric_update", label = "Update")
                ),
                mainPanel(conditionalPanel(condition = "output.one_table",
                                           DT::dataTableOutput("metric_table")),
@@ -120,39 +112,27 @@ ui <- fluidPage(
                
                #mainPanel(DT::dataTableOutput("metric")))
              )),
-    
-    #tab panel for PLOTS
     tabPanel("Plots", fluid = T, 
-             #Call for a sidebar layout
              sidebarLayout(
-               #declare the sidebar panel
                sidebarPanel = sidebarPanel(
-                 #user selects the type of plot they want to render
                  radioButtons("plottype",  "Plot Type",
                               choices = c(`Scatter Plot` = 'bp_scatter',
                                           `Histogram` = 'bp_hist', `Report` = 'bp_report',
-                                          `DOW_TOD_PLOTS_RENAME` = "dow_tod_plots",
-                                          `Time Series` = "bp_ts_plots"
+                                          `DOW_TOD_PLOTS_RENAME` = "dow_tod_plots"
                               )
                  ),
-                 #actionbutton that will notify shiny the user wants to update the plot information
                  actionButton(inputId = "plot_update", label = "Update"),
-                 #display ui found in sidebar, gets arguments used in plotting functions
                  uiOutput("subj_for_plots"),
                  uiOutput("group_var_for_scatter_and_report"),
-                 uiOutput("wrap_var_for_scatter_and_ts"),
+                 uiOutput("wrap_var_for_scatter"),
                  uiOutput("plot_type_for_scatter"),
                  uiOutput("include_crisis_stages2020"),
                  uiOutput("include_low_stages2020"),
-                 uiOutput("units_for_report")),
-                 #uiOutput("save_report_for_report")),
-               #configure main panel 
+                 uiOutput("units_for_report"),
+                 uiOutput("save_report_for_report")),
                mainPanel = 
-                 #draw the plot
                  mainPanel(plotOutput("plot"),
-                           #line break
                            hr(),
-                           #give data used and type of plot
                            textOutput(outputId = "plotName"),
                            textOutput(outputId = "plot_type_text"))
                
